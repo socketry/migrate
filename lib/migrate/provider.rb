@@ -1,3 +1,4 @@
+using.migrate(self.name, target, &block)
 # Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,14 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-RSpec.describe Migrate::Controller do
-	describe "simple migrations" do
-		let(:test_migration) {Migrate::Migration.new("test")}
-		
-		it "should run migrations" do
-			subject << [test_migration]
-			
-			expect(subject.migrations).to be_include(test_migration.name)
+module Migrate
+	class Provider
+		def migrate(migration, target, &block)
+			yield
 		end
 	end
 end

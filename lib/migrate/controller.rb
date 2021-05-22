@@ -18,52 +18,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require 'console'
+require 'build/files'
+
+require_relative 'migration'
+
 module Migrate
 	class Controller
-		def initialize
-			@migrations = {}
-		end
+		ROOT = Build::Files::Path.current / "migrate"
 		
-		attr :migrations
-		
-		# Apply the given migration.
-		def apply(migration)
-			start_time = Time.now
-			
-			yield
-			
-			duration = Time.now - start_time
-			
-			commit(migration)
-		end
-		
-		# Persist that the migration was applied.
-		def commit(migration)
-			@migrations[migration.name] = migration
-		end
-		
-		def << migrations
-			migrations.each do |migration|
-				apply(migration) do
-					migration.call(self)
-				end unless @migrations.include?(migration)
-			end
-		end
-	end
-	
-	class FileController
-		def initialize(root)
+		def initialize(root = ROOT)
 			@root = root
-			
-			super()
 		end
 		
 		def migrations
-			@migrations ||= load_migrations
+			@root.glob("**/*.rb").map{|path| Migration.new(path)}.sort
 		end
 		
-		def load_migrations
+		def migrate!
+			migrations.each do |migration|
+				Console.logger.debug(self, "Applying #{migration}...")
+				migration.call(self)
+			end
+		end
+		
+		def create!(name, &block)
+			prefix = Time.now.strftime("%Y%m%d%H%M%S")
+			path = @root / "#{prefix}-#{name}.rb"
+			path.parent.mkpath
 			
+			path.open(File::CREAT|File::TRUNC|File::WRONLY, &block)
+			
+			return path
 		end
 	end
 end

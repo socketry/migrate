@@ -20,30 +20,27 @@
 
 module Migrate
 	class Migration
-		def self.migration_name
-			self.name
-		end
-		
-		def initialize(name = self.class.migration_name)
-			@name = name
+		def initialize(path)
+			@path = path
+			@name = path.relative_path
 		end
 		
 		attr :name
 		
 		def call(controller)
+			self.instance_eval(::File.read(@path), @path)
 		end
 		
-		def self.load_path(path)
-			klass = Class.new(Migration)
-			migration_name = File.basename(path)
-			
-			klass.define_singleton_method(:migration_name) do
-				migration_name
-			end
-			
-			klass.class_eval(File.read(path), path)
-			
-			klass.freeze
+		def migrate(target, using:, &block)
+			using.migrate(self.name, target, &block)
+		end
+		
+		def to_s
+			@name
+		end
+		
+		def <=> other
+			@name <=> other.name
 		end
 	end
 end
