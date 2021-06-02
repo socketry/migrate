@@ -19,13 +19,10 @@
 # THE SOFTWARE.
 
 RSpec.describe Migrate::Controller do
-	describe "simple migrations" do
-		let(:test_migration) {Migrate::Migration.new("test")}
-		
-		it "should run migrations" do
-			subject << [test_migration]
-			
-			expect(subject.migrations).to be_include(test_migration.name)
-		end
+	let(:root) {Build::Files::Path.join(__dir__, "project/migrate")}
+	subject(:controller) {described_class.new(root)}
+	
+	it "can list migrations" do
+		expect(controller.migrations).to_not be_empty
 	end
 end

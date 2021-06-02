@@ -25,9 +25,11 @@ require_relative 'migration'
 
 module Migrate
 	class Controller
-		ROOT = Build::Files::Path.current / "migrate"
+		def self.root
+			Build::Files::Path.current / "migrate"
+		end
 		
-		def initialize(root = ROOT)
+		def initialize(root = self.class.root)
 			@root = root
 		end
 		
