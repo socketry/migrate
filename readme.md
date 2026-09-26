@@ -8,6 +8,32 @@ Provides a generic set of tools to implement migrations.
 
 Please see the [project documentation](https://socketry.github.io/migrate).
 
+### Checkpoints
+
+A checkpoint is an absolute snapshot of state, while a regular migration is a delta applied on top of the existing state. A checkpoint migration is any migration whose name contains the `checkpoint` marker, for example:
+
+``` ruby
+20260101000000-checkpoint.rb
+```
+
+Checkpoints are optional, and without one, all non-checkpoint migrations are applied in order:
+
+``` ruby
+controller.migrate!
+```
+
+When a checkpoint is present, it is applied first, and then only the migrations which sort after it are applied:
+
+``` ruby
+# Apply the most recent checkpoint:
+controller.migrate!(checkpoint: true)
+
+# Apply the checkpoint with a specific name:
+controller.migrate!(checkpoint: "20260101000000-checkpoint.rb")
+```
+
+If the specified checkpoint cannot be found, a `RuntimeError` is raised.
+
 ## Releases
 
 There are no documented releases.

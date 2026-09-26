@@ -4,17 +4,8 @@
 # Copyright, 2017-2021, by Samuel Williams.
 
 require "migrate"
+require "migrate/fakes"
 require "tmpdir"
-
-class FakeMigrator
-	def self.migrate(name, target, **options, &block)
-		@call = [name, target, options, block&.call]
-	end
-	
-	def self.call
-		@call
-	end
-end
 
 describe Migrate::Controller do
 	let(:root) {Build::Files::Path.join(__dir__, "../../fixtures/project/migrate")}
@@ -43,6 +34,19 @@ describe Migrate::Controller do
 			path.parent.mkpath
 			::File.write(path, content)
 			path
+		end
+		
+		def write_checkpoint_migrations
+			log = (@root / "log.txt").to_s.dump
+			
+			append = ->(name) { "File.open(#{log}, \"a\") {|file| file.write(\"#{name}\\n\")}\n" }
+			snapshot = "checkpoint(:database, using: FakeCheckpointMigrator, mode: :test) do\n\t:snapshot\nend\n"
+			
+			write_migration("1_seed_users.rb", append.call("1_seed_users.rb"))
+			write_migration("2_checkpoint.rb", "#{append.call("2_checkpoint.rb")}#{snapshot}")
+			write_migration("3_add_posts.rb", append.call("3_add_posts.rb"))
+			write_migration("4_checkpoint.rb", "#{append.call("4_checkpoint.rb")}#{snapshot}")
+			write_migration("5_add_comments.rb", append.call("5_add_comments.rb"))
 		end
 		
 		it "can create a migration" do
@@ -83,6 +87,43 @@ describe Migrate::Controller do
 			end
 			
 			expect(FakeMigrator.call).to be == ["custom_name", :database, {}, :result]
+		end
+		
+		it "can apply all migrations, ignoring checkpoints" do
+			write_checkpoint_migrations
+			log = @root / "log.txt"
+			
+			controller.migrate!
+			
+			expect(log.read).to be == "1_seed_users.rb\n3_add_posts.rb\n5_add_comments.rb\n"
+			expect(FakeCheckpointMigrator.call).to be(:nil?)
+		end
+		
+		it "can apply the most recent checkpoint" do
+			write_checkpoint_migrations
+			log = @root / "log.txt"
+			
+			controller.migrate!(checkpoint: true)
+			
+			expect(log.read).to be == "4_checkpoint.rb\n5_add_comments.rb\n"
+			expect(FakeCheckpointMigrator.call).to be == ["4_checkpoint.rb", :database, {mode: :test}, :snapshot]
+		end
+		
+		it "can apply a specific checkpoint" do
+			write_checkpoint_migrations
+			log = @root / "log.txt"
+			
+			controller.migrate!(checkpoint: "2_checkpoint.rb")
+			
+			expect(log.read).to be == "2_checkpoint.rb\n3_add_posts.rb\n5_add_comments.rb\n"
+		end
+		
+		it "can raise an error when the checkpoint is not found" do
+			write_checkpoint_migrations
+			
+			expect do
+				controller.migrate!(checkpoint: "9_nonexistent_checkpoint.rb")
+			end.to raise_exception(RuntimeError, message: be == 'No checkpoint found for "9_nonexistent_checkpoint.rb".')
 		end
 	end
 end

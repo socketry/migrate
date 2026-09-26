@@ -5,8 +5,12 @@
 
 module Migrate
 	class Provider
-		def migrate(migration, target, &block)
+		def migrate(migration, target, **options, &block)
 			yield
+		end
+		
+		def checkpoint(migration, target, **options, &block)
+			raise NotImplementedError, "Subclasses must implement #checkpoint."
 		end
 	end
 end
