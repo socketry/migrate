@@ -7,3 +7,4 @@ require_relative "migrate/version"
 
 require_relative "migrate/controller"
 require_relative "migrate/migration"
+require_relative "migrate/provider"
