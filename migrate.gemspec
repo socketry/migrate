@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 
 require_relative "lib/migrate/version"
 
@@ -9,17 +10,20 @@ Gem::Specification.new do |spec|
 	spec.authors = ["Samuel Williams"]
 	spec.license = "MIT"
 	
+	spec.cert_chain  = ["release.cert"]
+	spec.signing_key = File.expand_path("~/.gem/release.pem")
+	
 	spec.homepage = "https://github.com/socketry/migrate"
 	
 	spec.metadata = {
+		"bug_tracker_uri" => "https://github.com/socketry/migrate/issues",
 		"funding_uri" => "https://github.com/sponsors/ioquatix/",
+		"source_code_uri" => "https://github.com/socketry/migrate.git",
 	}
 	
-	spec.files = Dir.glob('{bake,lib}/**/*', File::FNM_DOTMATCH, base: __dir__)
+	spec.files = Dir.glob(["{bake,lib}/**/*", "*.md"], File::FNM_DOTMATCH, base: __dir__)
+	
+	spec.required_ruby_version = ">= 3.3"
 	
 	spec.add_dependency "build-files", "~> 1.7"
-	
-	spec.add_development_dependency "bake"
-	spec.add_development_dependency "bundler"
-	spec.add_development_dependency "rspec", "~> 3.0"
 end
