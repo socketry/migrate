@@ -25,7 +25,7 @@ module Migrate
 		
 		def migrate!
 			migrations.each do |migration|
-				Console.logger.debug(self, "Applying #{migration}...")
+				Console.logger.debug(self, "Applying...", migration: migration)
 				migration.call(self)
 			end
 		end
